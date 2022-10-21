@@ -3,6 +3,7 @@ from collections import defaultdict, namedtuple
 from curses import wrapper
 from itertools import product
 from random import randint
+from typing import DefaultDict, Set, Tuple
 
 
 BoardParams = namedtuple('BoardParams', ['x_max', 'y_max', 'n_mines'])
@@ -31,9 +32,9 @@ class Board:
 
     def __init__(self, params: BoardParams):
         self.params: BoardParams = params
-        self.mines: set[tuple[int, int]] = set()
-        self.numbers: defaultdict[tuple[int, int], int] = defaultdict(int)
-        self.flags: set[tuple[int, int]] = set()
+        self.mines: Set[Tuple[int, int]] = set()
+        self.numbers: DefaultDict[Tuple[int, int], int] = defaultdict(int)
+        self.flags: Set[Tuple[int, int]] = set()
 
         self.reset()
 
@@ -46,18 +47,25 @@ class Board:
             ))
         # Calculate numbers
         for x, y in self.mines:
-            for dx, dy in product([-1, 0, 1], [-1, 0, 1]):
-                x_ = x + dx
-                y_ = y + dy
-                if self.xy_in_board(x_, y_) and not self.xy_is_mine(x_, y_):
+            for x_, y_ in self.neighbors(x, y):
+                if not self.xy_is_mine(x_, y_):
                     self.numbers[(x_, y_)] += 1
+
+    def neighbors(self, x: int, y: int):
+        for dx, dy in product([-1, 0, 1], [-1, 0, 1]):
+            if dx == 0 and dy == 0:
+                continue
+            x_ = x + dx
+            y_ = y + dy
+            if not self.xy_in_board(x_, y_):
+                continue
+            yield x_, y_
 
     def xy_in_board(self, x: int, y: int) -> bool:
         return 0 <= x < self.params.x_max and 0 <= y < self.params.y_max
 
     def xy_is_mine(self, x: int, y: int) -> bool:
         return (x, y) in self.mines
-
 
 
 def main_(difficulty):
