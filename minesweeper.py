@@ -6,13 +6,13 @@ from random import randint
 from typing import DefaultDict, Set, Tuple
 
 
-BoardParams = namedtuple('BoardParams', ['x_max', 'y_max', 'n_mines'])
+BoardParams = namedtuple('BoardParams', ['n_cols', 'n_rows', 'n_mines'])
 
 
 DIFFICULTY_PARAMS = {
-    'easy': BoardParams(x_max=9, y_max=9, n_mines=10),
-    'intermediate': BoardParams(x_max=16, y_max=16, n_mines=40),
-    'expert': BoardParams(x_max=30, y_max=16, n_mines=99),
+    'easy': BoardParams(n_cols=9, n_rows=9, n_mines=10),
+    'intermediate': BoardParams(n_cols=16, n_rows=16, n_mines=40),
+    'expert': BoardParams(n_cols=30, n_rows=16, n_mines=99),
 }
 
 
@@ -34,6 +34,7 @@ class Board:
         self.params: BoardParams = params
         self.mines: Set[Tuple[int, int]] = set()
         self.numbers: DefaultDict[Tuple[int, int], int] = defaultdict(int)
+        self.opened: Set[Tuple[int, int]] = set()
         self.flags: Set[Tuple[int, int]] = set()
 
         self.reset()
@@ -42,30 +43,36 @@ class Board:
         # Set mines
         while len(self.mines) < self.params.n_mines:
             self.mines.add((
-                randint(0, self.params.x_max - 1),
-                randint(0, self.params.y_max - 1)
+                randint(0, self.params.n_cols - 1),
+                randint(0, self.params.n_rows - 1)
             ))
         # Calculate numbers
-        for x, y in self.mines:
-            for x_, y_ in self.neighbors(x, y):
-                if not self.xy_is_mine(x_, y_):
-                    self.numbers[(x_, y_)] += 1
+        for col, row in self.mines:
+            for col_, row_ in self.neighbors(col, row):
+                if not self.is_mine(col_, row_):
+                    self.numbers[(col_, row_)] += 1
+        # Others
+        self.opened = set()
+        self.flags = set()
 
-    def neighbors(self, x: int, y: int):
-        for dx, dy in product([-1, 0, 1], [-1, 0, 1]):
-            if dx == 0 and dy == 0:
+    def open(self, col: int, row: int):
+        pass
+
+    def neighbors(self, col: int, row: int):
+        for dcol, drow in product([-1, 0, 1], [-1, 0, 1]):
+            if dcol == 0 and drow == 0:
                 continue
-            x_ = x + dx
-            y_ = y + dy
-            if not self.xy_in_board(x_, y_):
+            col_ = col + dcol
+            row_ = row + drow
+            if not self.is_in_board(col_, row_):
                 continue
-            yield x_, y_
+            yield col_, row_
 
-    def xy_in_board(self, x: int, y: int) -> bool:
-        return 0 <= x < self.params.x_max and 0 <= y < self.params.y_max
+    def is_in_board(self, col: int, row: int) -> bool:
+        return 0 <= col < self.params.n_cols and 0 <= row < self.params.n_rows
 
-    def xy_is_mine(self, x: int, y: int) -> bool:
-        return (x, y) in self.mines
+    def is_mine(self, col: int, row: int) -> bool:
+        return (col, row) in self.mines
 
 
 def main_(difficulty):
