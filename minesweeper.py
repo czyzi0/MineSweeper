@@ -1,18 +1,18 @@
 import argparse
+import curses
 from collections import defaultdict, namedtuple
-from curses import wrapper
 from itertools import product
 from random import randint
 from typing import DefaultDict, Set, Tuple
 
 
-BoardParams = namedtuple('BoardParams', ['n_cols', 'n_rows', 'n_mines'])
+Params = namedtuple('Params', ['n_cols', 'n_rows', 'n_mines'])
 
 
 DIFFICULTY_PARAMS = {
-    'easy': BoardParams(n_cols=9, n_rows=9, n_mines=10),
-    'intermediate': BoardParams(n_cols=16, n_rows=16, n_mines=40),
-    'expert': BoardParams(n_cols=30, n_rows=16, n_mines=99),
+    'easy': Params(n_cols=9, n_rows=9, n_mines=10),
+    'intermediate': Params(n_cols=16, n_rows=16, n_mines=40),
+    'expert': Params(n_cols=30, n_rows=16, n_mines=99),
 }
 
 
@@ -28,10 +28,11 @@ def parse_args():
     return parser.parse_args()
 
 
-class Board:
+class MinesweeperModel:
 
-    def __init__(self, params: BoardParams):
-        self.params: BoardParams = params
+    def __init__(self, params: Params):
+        self.params: Params = params
+
         self.mines: Set[Tuple[int, int]] = set()
         self.numbers: DefaultDict[Tuple[int, int], int] = defaultdict(int)
         self.opened: Set[Tuple[int, int]] = set()
@@ -41,10 +42,10 @@ class Board:
 
     def reset(self) -> None:
         # Set mines
-        while len(self.mines) < self.params.n_mines:
+        while len(self.mines) < self.n_mines:
             self.mines.add((
-                randint(0, self.params.n_cols - 1),
-                randint(0, self.params.n_rows - 1)
+                randint(0, self.n_cols - 1),
+                randint(0, self.n_rows - 1)
             ))
         # Calculate numbers
         for col, row in self.mines:
@@ -55,7 +56,7 @@ class Board:
         self.opened = set()
         self.flags = set()
 
-    def open(self, col: int, row: int):
+    def open_(self, col: int, row: int):
         pass
 
     def neighbors(self, col: int, row: int):
@@ -69,31 +70,58 @@ class Board:
             yield col_, row_
 
     def is_in_board(self, col: int, row: int) -> bool:
-        return 0 <= col < self.params.n_cols and 0 <= row < self.params.n_rows
+        return 0 <= col < self.n_cols and 0 <= row < self.n_rows
 
     def is_mine(self, col: int, row: int) -> bool:
         return (col, row) in self.mines
 
+    def get_number(self, col: int, row: int) -> int:
+        return self.numbers[(col, row)]
 
-def main_(difficulty):
-    print('Hello, World!')
-    print(difficulty)
+    @property
+    def n_cols(self) -> int:
+        return self.params.n_cols
 
-    board = Board(DIFFICULTY_PARAMS[difficulty])
-    print(board.mines)
-    print(board.numbers)
+    @property
+    def n_rows(self) -> int:
+        return self.params.n_rows
+
+    @property
+    def n_mines(self) -> int:
+        return self.params.n_mines
+
+
+class MinesweeperView:
+
+    def __init__(self, model: MinesweeperModel, stdscr):
+        self.model = model
+
+        self.stdscr = stdscr
+
+    def mainloop(self)-> None:
+        self.stdscr.clear()
+
+        for row in range(self.model.n_rows):
+            for col in range(self.model.n_cols):
+                if self.model.is_mine(col, row):
+                    self.stdscr.addch(row, 2 * col, 'o')
+                elif number := self.model.get_number(col, row):
+                    self.stdscr.addch(row, 2 * col, str(number))
+
+
+        self.stdscr.refresh()
+        self.stdscr.getkey()
 
 
 def main(stdscr, difficulty):
-    stdscr.clear()
+    curses.curs_set(0)
 
-    stdscr.addstr(difficulty)
-
-    stdscr.refresh()
-    stdscr.getkey()
+    MinesweeperView(
+        MinesweeperModel(DIFFICULTY_PARAMS[difficulty]),
+        stdscr
+    ).mainloop()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    main_(args.difficulty)
-    #wrapper(main, difficulty=args.difficulty)
+    curses.wrapper(main, difficulty=args.difficulty)
