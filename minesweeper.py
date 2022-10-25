@@ -3,7 +3,7 @@ import curses
 from collections import defaultdict, namedtuple
 from itertools import product
 from random import randint
-from typing import DefaultDict, Set, Tuple
+from typing import DefaultDict, Dict, Set, Tuple
 
 
 Params = namedtuple('Params', ['n_cols', 'n_rows', 'n_mines'])
@@ -56,6 +56,10 @@ class MinesweeperModel:
         self.opened = set()
         self.flags = set()
 
+        # for col in range(self.n_cols):
+        #     for row in range(self.n_rows):
+        #         self.opened.add((col, row))
+
     def open_(self, col: int, row: int):
         pass
 
@@ -71,6 +75,9 @@ class MinesweeperModel:
 
     def is_in_board(self, col: int, row: int) -> bool:
         return 0 <= col < self.n_cols and 0 <= row < self.n_rows
+
+    def is_open(self, col: int, row: int) -> bool:
+        return (col, row) in self.opened
 
     def is_mine(self, col: int, row: int) -> bool:
         return (col, row) in self.mines
@@ -94,28 +101,83 @@ class MinesweeperModel:
 class MinesweeperView:
 
     def __init__(self, model: MinesweeperModel, stdscr):
-        self.model = model
+        curses.curs_set(0)
 
         self.stdscr = stdscr
+        self.init_colors()
+
+        self.model = model
+
+        self.cursor = (0, 0)
 
     def mainloop(self)-> None:
-        self.stdscr.clear()
+        while True:
+            self.stdscr.clear()
 
-        for row in range(self.model.n_rows):
-            for col in range(self.model.n_cols):
-                if self.model.is_mine(col, row):
-                    self.stdscr.addch(row, 2 * col, 'o')
-                elif number := self.model.get_number(col, row):
-                    self.stdscr.addch(row, 2 * col, str(number))
+            for row in range(self.model.n_rows):
+                for col in range(self.model.n_cols):
+                    is_cursor = self.is_cursor(col, row)
+                    if not self.model.is_open(col, row):
+                        self.stdscr.addch(row, 2 * col, '~', self.get_color(is_cursor))
+                    elif self.model.is_mine(col, row):
+                        self.stdscr.addch(row, 2 * col, 'X', self.get_color(is_cursor))
+                    elif number := self.model.get_number(col, row):
+                        self.stdscr.addch(row, 2 * col, str(number), self.get_color(is_cursor, number))
+                    else:
+                        self.stdscr.addch(row, 2 * col, ' ', self.get_color(is_cursor))
 
+            self.stdscr.refresh()
 
-        self.stdscr.refresh()
-        self.stdscr.getkey()
+            key = self.stdscr.getkey()
+
+            if key == 'q' or key == 'Q':
+                break
+
+            if key == 'KEY_UP':
+                self.cursor = (self.cursor[0], max(0, self.cursor[1] - 1))
+                continue
+            if key == 'KEY_DOWN':
+                self.cursor = (self.cursor[0], min(self.model.n_rows - 1, self.cursor[1] + 1))
+                continue
+            if key == 'KEY_LEFT':
+                self.cursor = (max(0, self.cursor[0] - 1), self.cursor[1])
+                continue
+            if key == 'KEY_RIGHT':
+                self.cursor = (min(self.model.n_cols - 1, self.cursor[0] + 1), self.cursor[1])
+                continue
+
+    def init_colors(self) -> None:
+        # Non-cursor default
+        curses.init_pair(10, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        # Non-cursor numbers
+        curses.init_pair(11, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(12, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(13, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(14, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(15, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        curses.init_pair(16, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(17, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(18, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        # Cursor default
+        curses.init_pair(20, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        # Cursor numbers
+        curses.init_pair(21, curses.COLOR_BLUE, curses.COLOR_WHITE)
+        curses.init_pair(22, curses.COLOR_GREEN, curses.COLOR_WHITE)
+        curses.init_pair(23, curses.COLOR_RED, curses.COLOR_WHITE)
+        curses.init_pair(24, curses.COLOR_YELLOW, curses.COLOR_WHITE)
+        curses.init_pair(25, curses.COLOR_MAGENTA, curses.COLOR_WHITE)
+        curses.init_pair(26, curses.COLOR_CYAN, curses.COLOR_WHITE)
+        curses.init_pair(27, curses.COLOR_BLUE, curses.COLOR_WHITE)
+        curses.init_pair(28, curses.COLOR_GREEN, curses.COLOR_WHITE)
+
+    def get_color(self, is_cursor: bool, number: int = 0) -> int:
+        return curses.color_pair(20 + number if is_cursor else 10 + number)
+
+    def is_cursor(self, col: int, row: int) -> bool:
+        return (col, row) == self.cursor
 
 
 def main(stdscr, difficulty):
-    curses.curs_set(0)
-
     MinesweeperView(
         MinesweeperModel(DIFFICULTY_PARAMS[difficulty]),
         stdscr
