@@ -19,11 +19,11 @@ $(BIN_NAME): minesweeper.py
 		&& deactivate
 	@echo "Linting with pylint..." \
 		&& source venv/bin/activate \
-		&& $(PYTHON) -m pylint --exit-zero $^ \
+		&& $(PYTHON) -m pylint --exit-zero $^ src/\
 		&& deactivate
 	@echo "Type checking with mypy..." \
 		&& source venv/bin/activate \
-		&& $(PYTHON) -m mypy $^ \
+		&& $(PYTHON) -m mypy $^ src/ \
 		&& deactivate
 	@echo "Building with pyinstaller..." \
 		&& source venv/bin/activate \
