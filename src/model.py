@@ -35,12 +35,27 @@ class MinesweeperModel:
         self.opened = set()
         self.flags = set()
 
-        for col in range(self.n_cols):
-            for row in range(self.n_rows):
-                self.opened.add((col, row))
-
     def open_(self, col: int, row: int):
-        pass
+        if self.is_open(col, row):
+            return
+
+        self.opened.add((col, row))
+
+        if (col, row) in self.flags:
+            self.flags.remove((col, row))
+
+        if not self.is_mine(col, row) and self.get_number(col, row) == 0:
+            for col_, row_ in self.neighbors(col, row):
+                self.open_(col_, row_)
+
+    def toggle_flag(self, col: int, row: int):
+        if self.is_open(col, row):
+            return
+
+        if (col, row) in self.flags:
+            self.flags.remove((col, row))
+        else:
+            self.flags.add((col, row))
 
     def neighbors(self, col: int, row: int):
         for dcol, drow in itertools.product([-1, 0, 1], [-1, 0, 1]):
@@ -60,6 +75,9 @@ class MinesweeperModel:
 
     def is_mine(self, col: int, row: int) -> bool:
         return (col, row) in self.mines
+
+    def is_flag(self, col: int, row: int) -> bool:
+        return (col, row) in self.flags
 
     def get_number(self, col: int, row: int) -> int:
         return self.numbers[(col, row)]

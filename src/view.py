@@ -19,36 +19,10 @@ class MinesweeperView:
         self.start_time: Optional[float] = None
 
     def mainloop(self)-> None:
-        while True:
+        finished = False
+        while not finished:
             self.print_scr()
-
-            try:
-                key = self.stdscr.getkey()
-            except curses.error:
-                time.sleep(0.1)
-                key = None
-
-            if key in ('q', 'Q'):
-                break
-
-            if key == 'KEY_UP':
-                self.cursor = (self.cursor[0], max(0, self.cursor[1] - 1))
-                continue
-            if key == 'KEY_DOWN':
-                self.cursor = (self.cursor[0], min(self.model.n_rows - 1, self.cursor[1] + 1))
-                continue
-            if key == 'KEY_LEFT':
-                self.cursor = (max(0, self.cursor[0] - 1), self.cursor[1])
-                continue
-            if key == 'KEY_RIGHT':
-                self.cursor = (min(self.model.n_cols - 1, self.cursor[0] + 1), self.cursor[1])
-                continue
-
-            if key in ('o', 'O'):
-                self.start_timer()
-
-            if key in ('p', 'P'):
-                self.start_timer()
+            finished = self.handle_ctrl()
 
     def print_scr(self) -> None:
         self.stdscr.clear()
@@ -78,7 +52,9 @@ class MinesweeperView:
         for row in range(self.model.n_rows):
             for col in range(self.model.n_cols):
                 is_cursor = self.is_cursor(col, row)
-                if not self.model.is_open(col, row):
+                if self.model.is_flag(col, row):
+                    self.stdscr.addch(2 + row, 2 * col + 1, '⚑', self.get_color(is_cursor))
+                elif not self.model.is_open(col, row):
                     self.stdscr.addch(2 + row, 2 * col + 1, '~', self.get_color(is_cursor))
                 elif self.model.is_mine(col, row):
                     self.stdscr.addch(2 + row, 2 * col + 1, '☀', self.get_color(is_cursor))
@@ -88,15 +64,45 @@ class MinesweeperView:
                 else:
                     self.stdscr.addch(2 + row, 2 * col + 1, ' ', self.get_color(is_cursor))
 
-        # Flag: ⚑
-
         # Help
         self.stdscr.addstr(1 + board_n_rows, 0, 'Navigate: ← → ↑ ↓')
-        self.stdscr.addstr(1 + board_n_rows + 1, 0, 'Open: o')
-        self.stdscr.addstr(1 + board_n_rows + 2, 0, 'Flag: p')
+        self.stdscr.addstr(1 + board_n_rows + 1, 0, 'Open: Space')
+        self.stdscr.addstr(1 + board_n_rows + 2, 0, 'Flag: f')
         self.stdscr.addstr(1 + board_n_rows + 3, 0, 'Exit: q')
 
         self.stdscr.refresh()
+
+    def handle_ctrl(self) -> bool:
+        try:
+            key = self.stdscr.getkey()
+        except curses.error:
+            time.sleep(0.1)
+            key = None
+
+        if key in ('q', 'Q'):
+            return True
+
+        elif key == 'KEY_UP':
+            self.cursor = (self.cursor[0], max(0, self.cursor[1] - 1))
+        elif key == 'KEY_DOWN':
+            self.cursor = (self.cursor[0], min(self.model.n_rows - 1, self.cursor[1] + 1))
+        elif key == 'KEY_LEFT':
+            self.cursor = (max(0, self.cursor[0] - 1), self.cursor[1])
+        elif key == 'KEY_RIGHT':
+            self.cursor = (min(self.model.n_cols - 1, self.cursor[0] + 1), self.cursor[1])
+
+        elif key == ' ':
+            self.start_timer()
+            if not self.model.is_flag(*self.cursor):
+                self.model.open_(*self.cursor)
+
+        elif key in ('f', 'F'):
+            self.start_timer()
+            self.model.toggle_flag(*self.cursor)
+
+        # TODO: Check if lost
+
+        return False
 
     def get_color(self, is_cursor: bool, number: int = 0) -> int:
         return curses.color_pair(20 + number if is_cursor else 10 + number)

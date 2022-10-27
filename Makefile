@@ -1,14 +1,12 @@
 SHELL := /bin/bash
 
-BIN_NAME := minesweeper
-
 PYTHON := python3.8
 PYLINT_VERSION := 2.15.5
 MYPY_VERSION := 0.982
 PYINSTALLER_VERSION := 5.5
 
 
-$(BIN_NAME): minesweeper.py
+minesweeper: minesweeper.py src/*
 	@echo "Creating virtual environment..." \
 		&& $(PYTHON) -m venv venv
 	@echo "Installing dependencies..." \
@@ -19,18 +17,18 @@ $(BIN_NAME): minesweeper.py
 		&& deactivate
 	@echo "Linting with pylint..." \
 		&& source venv/bin/activate \
-		&& $(PYTHON) -m pylint --exit-zero $^ src/\
+		&& $(PYTHON) -m pylint --exit-zero $< src/\
 		&& deactivate
 	@echo "Type checking with mypy..." \
 		&& source venv/bin/activate \
-		&& $(PYTHON) -m mypy $^ src/ \
+		&& $(PYTHON) -m mypy $< src/ \
 		&& deactivate
 	@echo "Building with pyinstaller..." \
 		&& source venv/bin/activate \
-		&& pyinstaller --onefile --distpath . --specpath ./build $^ \
+		&& pyinstaller --onefile --distpath . --specpath ./build $< \
 		&& deactivate
 
 clean:
-	rm -rf build/ venv/ $(BIN_NAME)
+	rm -rf build/ venv/ minesweeper
 
 .PHONY: clean
