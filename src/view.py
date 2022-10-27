@@ -1,3 +1,5 @@
+#pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
+
 import curses
 import time
 from typing import Optional, Tuple
@@ -6,6 +8,7 @@ from src.model import MinesweeperModel
 
 
 class MinesweeperView:
+    #pylint: disable=too-few-public-methods
 
     def __init__(self, model: MinesweeperModel, stdscr):
         self._stdscr = stdscr
@@ -14,7 +17,11 @@ class MinesweeperView:
         self._init_curses()
 
         self._cursor: Tuple[int, int] = (0, 0)
-        self._start_time: Optional[float] = None
+
+        self._start_time: Optional[float]
+        self._stop_time: Optional[float]
+
+        self._reset()
 
     def mainloop(self)-> None:
         while True:
@@ -57,7 +64,7 @@ class MinesweeperView:
 
         # Top bar
         self._stdscr.addstr(self._mine_counter_y, self._mine_counter_x, self._mine_counter_value)
-        # TODO: emoticon -_-   x_x   ^_^
+        self._stdscr.addstr(self._emoticon_y, self._emoticon_x, self._emoticon_value)
         self._stdscr.addstr(self._timer_y, self._timer_x, self._timer_value)
 
         # Board - Box
@@ -117,6 +124,22 @@ class MinesweeperView:
         return f'{self._model.n_mines - self._model.n_flags:03}'
 
     @property
+    def _emoticon_x(self) -> int:
+        return self._board_n_cols // 2 - 1
+
+    @property
+    def _emoticon_y(self) -> int:
+        return 0
+
+    @property
+    def _emoticon_value(self) -> str:
+        if self._model.won:
+            return '^_^'
+        if self._model.lost:
+            return 'x_x'
+        return '-_-'
+
+    @property
     def _timer_x(self) -> int:
         return self._board_n_cols - 3
 
@@ -128,7 +151,8 @@ class MinesweeperView:
     def _timer_value(self) -> str:
         if self._start_time is None:
             return '000'
-        return f'{min(999, int(time.time() - self._start_time)):03}'
+        time_ = time.time() if self._stop_time is None else self._stop_time
+        return f'{min(999, int(time_ - self._start_time)):03}'
 
     @property
     def _board_x(self) -> int:
@@ -147,7 +171,8 @@ class MinesweeperView:
         return self._model.n_rows + 2
 
     def _is_cursor(self, col: int, row: int) -> bool:
-        # TODO: If lost, everything is not a cursor
+        if self._model.lost or self._model.won:
+            return False
         return (col, row) == self._cursor
 
     def _col_row_model2view(self, col: int, row: int) -> Tuple[int, int]:
@@ -168,9 +193,13 @@ class MinesweeperView:
         if key in ('q', 'Q'):
             return True
 
-        # TODO: Check win condition
+        if key in ('r', 'R'):
+            self._reset()
 
-        if key == 'KEY_UP':
+        elif self._model.lost or self._model.won:
+            self._stop_timer()
+
+        elif key == 'KEY_UP':
             self._move_cursor(0, -1)
         elif key == 'KEY_DOWN':
             self._move_cursor(0, 1)
@@ -189,6 +218,12 @@ class MinesweeperView:
 
         return False
 
+    def _reset(self) -> None:
+        self._model.reset()
+
+        self._start_time = None
+        self._stop_time = None
+
     def _move_cursor(self, dcol: int, drow: int) -> None:
         col, row = self._cursor
         col += dcol
@@ -199,3 +234,7 @@ class MinesweeperView:
     def _start_timer(self) -> None:
         if self._start_time is None:
             self._start_time = time.time()
+
+    def _stop_timer(self) -> None:
+        if self._stop_time is None:
+            self._stop_time = time.time()

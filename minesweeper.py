@@ -1,3 +1,5 @@
+#pylint: disable=missing-module-docstring,missing-function-docstring
+
 import argparse
 import curses
 
@@ -15,7 +17,7 @@ DIFFICULTY_PARAMS = {
 def parse_args():
     parser = argparse.ArgumentParser(description= \
         'Play Minesweeper game. To navigate use ← → ↑ ↓, to reveal a field press Space, ' \
-        'to flag a field use f and to quit the game press q.')
+        'to flag a field use f, to reset the game press r and to quit the game use q.')
 
     parser.add_argument(
         '-d', '--difficulty', type=str,
@@ -27,12 +29,12 @@ def parse_args():
 
 
 def main(stdscr, difficulty):
-    MinesweeperView(
-        MinesweeperModel(DIFFICULTY_PARAMS[difficulty]),
-        stdscr
-    ).mainloop()
+    MinesweeperView(MinesweeperModel(DIFFICULTY_PARAMS[difficulty]), stdscr).mainloop()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    curses.wrapper(main, difficulty=args.difficulty)
+    try:
+        curses.wrapper(main, difficulty=args.difficulty)
+    except curses.error:
+        print('Something went wrong :(')
