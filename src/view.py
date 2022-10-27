@@ -170,7 +170,7 @@ class MinesweeperView:
 
         # TODO: Check win condition
 
-        elif key == 'KEY_UP':
+        if key == 'KEY_UP':
             self._move_cursor(0, -1)
         elif key == 'KEY_DOWN':
             self._move_cursor(0, 1)

@@ -14,8 +14,8 @@ DIFFICULTY_PARAMS = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description= \
-        f'Play Minesweeper game. To navigate use ← → ↑ ↓, to reveal a field press Space, ' \
-        f'to flag a field use f and to quit the game press q.')
+        'Play Minesweeper game. To navigate use ← → ↑ ↓, to reveal a field press Space, ' \
+        'to flag a field use f and to quit the game press q.')
 
     parser.add_argument(
         '-d', '--difficulty', type=str,
