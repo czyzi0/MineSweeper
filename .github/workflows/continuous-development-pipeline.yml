@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          apt install python3.8 python3.8-venv
+          sudo apt install python3.8 python3.8-venv
 
       - name: Build binary
         shell: bash -l {0}
