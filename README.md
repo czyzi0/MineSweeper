@@ -2,7 +2,7 @@
 
 ![image](screenshot.png)
 
-This game was coded as an simple exercise for using `curses` and `pyinstaller`. The requirements to build binary are
+This game was coded as a simple exercise for using `curses` and `pyinstaller`. The requirements to build binary are
 ```bash
 sudo apt install python3.8 python3.8-venv
 ```
